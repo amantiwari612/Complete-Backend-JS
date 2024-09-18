@@ -238,7 +238,7 @@ const updateAccountDetail = asyncHandler(async (req, res) => {
   if (!fullname || !email) {
     throw new ApiError(400, "All field are required");
   }
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     { $set: { fullname, email } },
     { new: true }
@@ -322,7 +322,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         isSubscribed: {
           $cond: {
-            if: { $in: [req.user?._id, "$subscribers,subscriber"] },
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
             then: true,
             else: false,
           },
@@ -351,7 +351,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 });
 
 const getWatchHistory = asyncHandler(async (req, res) => {
-  const user = User.aggregate([
+  const user = await User.aggregate([
     {
       $match: {
         _id: new mongoose.Types.ObjectId(req.user._id),
@@ -373,7 +373,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
               pipeline: [
                 {
                   $project: {
-                    fullname: 1,
+                    fullName: 1,
                     username: 1,
                     avatar: 1,
                   },
@@ -392,6 +392,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       },
     },
   ]);
+  console.log(user);
   return res
     .status(200)
     .json(
