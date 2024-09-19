@@ -74,7 +74,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, videos, "Videos fetched successfully"));
 });
-// TODO: only the value comes from rea.body should only updated
+// TODO: only the value comes from req.body should only updated
 // complete
 
 const updateVideo = asyncHandler(async (req, res) => {
