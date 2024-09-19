@@ -31,7 +31,7 @@ const getPlaylistById = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
   try {
     const playlist = await Playlist.findById(playlistId)
-      .populate("videos", { _id: 0 })
+      .populate("videos", { _id: 1 })
       .populate("owner", "username fullname avatar");
     if (!playlist) {
       throw new ApiError(400, "Unable to get the Playlist");
@@ -98,8 +98,14 @@ const addVideoInPlaylist = asyncHandler(async (req, res) => {
   const { playlistId, videoId } = req.params;
   const userId = req.user?._id;
 
-  if (!isValidObjectId(playlistId)) {
-    throw new ApiError(400, "invalid playlist ID or video ID");
+  if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
+    throw new ApiError(400, "Invalid playlist ID or video ID");
+  }
+  const existedVideos = await Playlist.findOne({
+    $or: [{ videos: videoId }],
+  });
+  if (existedVideos) {
+    throw new ApiError(400, "Video already exists in the playlist");
   }
 
   try {
@@ -127,6 +133,13 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
   if (!isValidObjectId(playlistId) || !isValidObjectId(videoId)) {
     throw new ApiError(400, "Invalid playlist ID or video ID");
   }
+  const existedVideos = await Playlist.findOne({
+    $or: [{ videos: videoId }],
+  });
+  if (!existedVideos) {
+    throw new ApiError(400, "This Video Id doesn't exists");
+  }
+
   try {
     const playlist = await Playlist.findOneAndUpdate(
       {
