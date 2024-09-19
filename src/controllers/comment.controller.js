@@ -50,7 +50,7 @@ const deleteComment = asyncHandler(async (req, res) => {
   // if (!mongoose.Types.ObjectId.isValid(req.params.commentId)) {
   //   return res.status(400).json(new ApiResponse(400, {}, "Invalid comment ID"));
   // }
-  const comment = await Comment.findById(commentId);
+  const comment = await Comment.findByIdAndDelete(commentId);
   if (!comment) {
     throw new ApiError(400, "Comment not found");
   }
