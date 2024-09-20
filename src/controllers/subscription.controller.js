@@ -132,7 +132,11 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     return res
       .status(200)
       .json(
-        new ApiResponse(200, subscribedChannels, "no channel subscribed yet")
+        new ApiResponse(
+          200,
+          subscribedChannels,
+          "fetched all subcribed channel"
+        )
       );
   } catch (error) {
     throw new ApiError(

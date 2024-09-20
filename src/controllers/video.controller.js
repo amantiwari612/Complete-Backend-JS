@@ -6,6 +6,8 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const publistAVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
+  const userId = req.user?._id;
+
   // get the video,upload to cloudinary,create video
   const videoLocalPath = req.files?.videoFile[0]?.path;
   const thumbnailLocalPath = req.files?.thumbnail[0]?.path;
@@ -19,13 +21,15 @@ const publistAVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "VideoFile is required");
   }
 
-  const video = await Video.create({
+  const vid = new Video({
     videoFile: videoFile.url,
     thumbnail: thumbnail.url,
     title,
     description,
+    owner: userId,
     duration: videoFile.duration,
   });
+  const video = await vid.save({ validateBeforeSave: false });
   const createdVideo = await Video.findById(video._id).select(
     "-password -refreshToken"
   );
@@ -63,17 +67,17 @@ const getVideoById = asyncHandler(async (req, res) => {
       )
     );
 });
-const getAllVideos = asyncHandler(async (req, res) => {
-  const videos = await Video.find();
+// const getAllVideos = asyncHandler(async (req, res) => {
+//   const videos = await Video.find();
 
-  if (!videos || videos.length === 0) {
-    return res.status(404).json(new ApiResponse(404, null, "No videos found"));
-  }
+//   if (!videos || videos.length === 0) {
+//     return res.status(404).json(new ApiResponse(404, null, "No videos found"));
+//   }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, videos, "Videos fetched successfully"));
-});
+//   return res
+//     .status(200)
+//     .json(new ApiResponse(200, videos, "Videos fetched successfully"));
+// });
 // TODO: only the value comes from req.body should only updated
 // complete
 
@@ -109,5 +113,9 @@ const updateVideo = asyncHandler(async (req, res) => {
 // unused method to handle the pulished status of the video
 const tooglePublishStatus = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+});
+const getAllVideos = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
+  //TODO: get all videos based on query, sort, pagination
 });
 export { publistAVideo, deleteVideo, getVideoById, getAllVideos, updateVideo };
