@@ -1,3 +1,4 @@
+import mongoose, { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -117,5 +118,74 @@ const tooglePublishStatus = asyncHandler(async (req, res) => {
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
   //TODO: get all videos based on query, sort, pagination
+
+  // validate and set sortBy and sorttype
+  // filter userId if provided
+  // using aggregate pipeling-
+  // 1.match, 2.sortby validated field, 3.pagination(sort,limit ) 4.project specific filed
+  // count total no of videos to match the filter
+  const sortByField = ["createdAt", "duration", "views"];
+  const sortTypeArr = ["asc", "desc"];
+
+  const validSortBy = sortByField.includes(sortBy) ? sortBy : "createdAt";
+  const validSortType = sortTypeArr.includes(sortType) ? sortType : "desc";
+  if (userId && !isValidObjectId(userId)) {
+    throw new ApiError(400, "Invalid userId");
+  }
+  try {
+    let queryString = query ? query.toString() : "";
+    let filterCondition = {
+      $or: [
+        {
+          title: { $regex: queryString, $options: "i" },
+        },
+        {
+          description: { $regex: queryString, $options: "i" },
+        },
+      ],
+    };
+
+    const videos = await Video.aggregate([
+      {
+        $match: {
+          owner: userId ? new mongoose.Types.ObjectId(userId) : null,
+          ...filterCondition,
+        },
+      },
+      {
+        $sort: {
+          [validSortBy]: validSortType === "desc" ? -1 : 1,
+        },
+      },
+      { $skip: (page - 1) * limit },
+      { $limit: parseInt(limit, 10) },
+      {
+        $project: {
+          title: 1,
+          description: 1,
+          thumbnail: 1,
+          views: 1,
+          createdAt: 1,
+          duration: 1,
+          owner: 1,
+        },
+      },
+    ]);
+
+    const totalVideos = await Video.countDocuments(filterCondition);
+    // alternate for total videos
+    // const totalVideos = await videos.length();
+    res.status(200).json({
+      limit,
+      success: true,
+      totalVideos,
+      currentPage: parseInt(page, 10),
+      totalPages: Math.ceil(totalVideos / limit),
+      videos,
+    });
+  } catch (error) {
+    console.log(error);
+    throw new ApiError(400, "Something went wrong while fetching the videos!");
+  }
 });
 export { publistAVideo, deleteVideo, getVideoById, getAllVideos, updateVideo };
